@@ -4,7 +4,7 @@ Swift classes for simple usage of Core MIDI. Currently only MIDI input is availa
 # Usage
 
 First, we need to define a MIDIMap with appropriate callbacks.
-For example, we have some audio unit with a parameter "volume"
+For example, we have some audio unit with a parameter "volume":
 ```Swift
 let volumeParam = audioUnit.parameterTree?.valueForKey("volume") as! AUParameter
 ```
