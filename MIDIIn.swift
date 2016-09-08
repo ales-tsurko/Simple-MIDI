@@ -5,6 +5,12 @@
 //  Copyright © 2016 Aliaksandr Tsurko. All rights reserved.
 //
 
+extension AUValue {
+    func linlin(inMin inMin: Float, inMax: Float, outMin: Float, outMax: Float) -> Float {
+        return (self - inMin) / (inMax - inMin) * (outMax - outMin) + outMin
+    }
+}
+
 public class MIDIMap: NSObject {
     
     public var noteOnOffCallback: ((note: UInt8, velocity: UInt8) -> Void)?
@@ -66,7 +72,7 @@ public class MIDIIn: NSObject {
     
     public var availableDevices: [MIDIDevice] = []
     
-    final public let MIDINotifyCallback: MIDINotifyProc = {message, refCon in
+    public let MIDINotifyCallback: MIDINotifyProc = {message, refCon in
         var inDesc = UnsafeMutablePointer<MIDIMap>(refCon).memory
         if let callback = inDesc.notificationCallback {
             callback(message: message.memory)
