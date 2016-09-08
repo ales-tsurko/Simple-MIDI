@@ -20,7 +20,7 @@ let map = MIDIMap(noteOnOffCallback: nil, sustainPedalCallback: nil, pitchBendCa
 Pitch Bend, Modulation Wheel and MIDI Notifications.
 
 Let's define a callback for the modulation wheel. Our audio unit has a parameter
-"filter-frequency" with minimum value 0 and maximum value 1. We're going to change
+"filter-frequency" with a minimum value 0 and a maximum value 1. We're going to change
 it's value with the modulation wheel. */
 
 let frequencyParam = audioUnit.parameterTree?.valueForKey("filter-frequency") as! AUParamter
