@@ -6,7 +6,7 @@
 //
 
 extension AUValue {
-    func linlin(inMin inMin: Float, inMax: Float, outMin: Float, outMax: Float) -> Float {
+    func mapLinearRangeToLinear(inMin inMin: AUValue, inMax: AUValue, outMin: AUValue, outMax: AUValue) -> AUValue {
         return (self - inMin) / (inMax - inMin) * (outMax - outMin) + outMin
     }
 }
@@ -125,7 +125,7 @@ public class MIDIIn: NSObject {
                 } else {
                     if let ccMap = inDesc.ccMapping {
                         if let parameter = ccMap[number] {
-                            parameter.value = AUValue(value).linlin(inMin: 0, inMax: 127, outMin: parameter.minValue, outMax: parameter.maxValue)
+                            parameter.value = AUValue(value).mapLinearRangeToLinear(inMin: 0, inMax: 127, outMin: parameter.minValue, outMax: parameter.maxValue)
                         }
                     }
                 }
