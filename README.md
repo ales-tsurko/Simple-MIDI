@@ -26,7 +26,7 @@ We also can define callbacks for another common MIDI messages: Note On/Off, Pitc
 Let's define a callback for the modulation wheel. Our audio unit has a parameter "filter-frequency" with a minimum value of 0 and a maximum value of 1. We're going to change it's value with the modulation wheel.
 
 ```Swift
-// get the paramter and initialize a callback
+// get the parameter and initialize a callback
 let frequencyParam = audioUnit.parameterTree?.valueForKey("filter-frequency") as! AUParamter
 let modulationWheelCallback = {(value: UInt8) in
   frequencyParam.value = AUValue(value)/127
