@@ -184,8 +184,6 @@ public class MIDIIn: NSObject {
             let device = MIDIDevice(midiIn: self, name: name, id: id, isConnected: false)
             
             self.availableDevices.append(device)
-            
-            endpointName?.release()
         }
     }
     
