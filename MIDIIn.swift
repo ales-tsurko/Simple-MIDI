@@ -6,21 +6,21 @@
 //
 
 extension AUValue {
-    func mapLinearRangeToLinear(inMin inMin: AUValue, inMax: AUValue, outMin: AUValue, outMax: AUValue) -> AUValue {
+    func mapLinearRangeToLinear(inMin: AUValue, inMax: AUValue, outMin: AUValue, outMax: AUValue) -> AUValue {
         return (self - inMin) / (inMax - inMin) * (outMax - outMin) + outMin
     }
 }
 
-public class MIDIMap: NSObject {
+open class MIDIMap: NSObject {
     
-    public var noteOnOffCallback: ((note: UInt8, velocity: UInt8) -> Void)?
-    public var sustainPedalCallback: ((value: UInt8) -> Void)?
-    public var pitchBendCallback: ((value: UInt8) -> Void)?
-    public var modulationWheelCallback: ((value: UInt8) -> Void)?
-    public var notificationCallback: ((message: MIDINotification) -> Void)?
-    public var ccMapping: [UInt8: AUParameter]?
+    open var noteOnOffCallback: ((_ note: UInt8, _ velocity: UInt8) -> Void)?
+    open var sustainPedalCallback: ((_ value: UInt8) -> Void)?
+    open var pitchBendCallback: ((_ value: UInt8) -> Void)?
+    open var modulationWheelCallback: ((_ value: UInt8) -> Void)?
+    open var notificationCallback: ((_ message: MIDINotification) -> Void)?
+    open var ccMapping: [UInt8: AUParameter]?
     
-    required public init(noteOnOffCallback: ((UInt8, UInt8) -> Void)?, sustainPedalCallback: (UInt8 -> Void)?, pitchBendCallback: (UInt8 -> Void)?, modulationWheelCallback: (UInt8 -> Void)?, notificationCallback: (MIDINotification -> Void)?, ccMapping: [UInt8: AUParameter]?) {
+    required public init(noteOnOffCallback: ((UInt8, UInt8) -> Void)?, sustainPedalCallback: ((UInt8) -> Void)?, pitchBendCallback: ((UInt8) -> Void)?, modulationWheelCallback: ((UInt8) -> Void)?, notificationCallback: ((MIDINotification) -> Void)?, ccMapping: [UInt8: AUParameter]?) {
         super.init()
         
         self.noteOnOffCallback = noteOnOffCallback
@@ -33,25 +33,25 @@ public class MIDIMap: NSObject {
     }
 }
 
-public class MIDIDevice: NSObject {
-    public var name: String!
-    public var uniqueID: Int32!
-    public var isConnected: Bool {
+open class MIDIDevice: NSObject {
+    open var name: String!
+    open var uniqueID: Int32!
+    open var isConnected: Bool {
         didSet {
             var object: MIDIObjectRef = 0
-            var type: MIDIObjectType = MIDIObjectType.Destination
+            var type: MIDIObjectType = MIDIObjectType.destination
             let err = MIDIObjectFindByUniqueID(self.uniqueID, &object, &type)
             
             if self.isConnected && err != kMIDIObjectNotFound {
                 MIDIPortConnectSource(self.midiIn.port, object, nil)
-                print("\(self.name) is connected")
+                print("\(self.name!) is connected")
             } else {
                 MIDIPortDisconnectSource(self.midiIn.port, object)
-                print("\(self.name) is disconnected")
+                print("\(self.name!) is disconnected")
             }
         }
     }
-    public var midiIn: MIDIIn!
+    open var midiIn: MIDIIn!
     
     required public init(midiIn: MIDIIn, name: String, id: Int32, isConnected: Bool) {
         self.midiIn = midiIn
@@ -64,27 +64,27 @@ public class MIDIDevice: NSObject {
 
 private var inputDescription: MIDIMap!
 
-public class MIDIIn: NSObject {
+open class MIDIIn: NSObject {
     
-    public let client: MIDIClientRef
-    public let port: MIDIPortRef
-    public let midiMap: MIDIMap
+    open let client: MIDIClientRef
+    open let port: MIDIPortRef
+    open let midiMap: MIDIMap
     
-    public var availableDevices: [MIDIDevice] = []
+    open var availableDevices: [MIDIDevice] = []
     
-    public let MIDINotifyCallback: MIDINotifyProc = {message, refCon in
-        var inDesc = UnsafeMutablePointer<MIDIMap>(refCon).memory
-        if let callback = inDesc.notificationCallback {
-            callback(message: message.memory)
+    open let MIDINotifyCallback: MIDINotifyProc = {message, refCon in
+        var inDesc = refCon?.assumingMemoryBound(to: MIDIMap.self).pointee
+        if let callback = inDesc?.notificationCallback {
+            callback(message.pointee)
         }
     }
     
-    public let MIDIReadCallback: MIDIReadProc = {pktlist, refCon, connRefCon in
-        var inDesc = UnsafeMutablePointer<MIDIMap>(refCon).memory
+    open let MIDIReadCallback: MIDIReadProc = {pktlist, refCon, connRefCon in
+        var inDesc = refCon?.assumingMemoryBound(to: MIDIMap.self).pointee
         
-        var packet = pktlist.memory.packet
+        var packet = pktlist.pointee.packet
         
-        for _ in 1...pktlist.memory.numPackets {
+        for _ in 1...pktlist.pointee.numPackets {
             let midiStatus = packet.data.0
             let midiCommand = midiStatus>>4
             
@@ -93,17 +93,17 @@ public class MIDIIn: NSObject {
                 let note = packet.data.1&0x7f
                 let velocity = midiCommand == 0x08 ? 0 : packet.data.2&0x7f
                 
-                if let callback = inDesc.noteOnOffCallback {
-                    callback(note: note, velocity: velocity)
+                if let callback = inDesc?.noteOnOffCallback {
+                    callback(note, velocity)
                 }
                 
             }
             
             // Pitch bend
             if midiCommand == 0x0E {
-                if let callback = inDesc.pitchBendCallback {
+                if let callback = inDesc?.pitchBendCallback {
                     let value = packet.data.2&0x7f
-                    callback(value: value)
+                    callback(value)
                 }
             }
             
@@ -114,16 +114,16 @@ public class MIDIIn: NSObject {
                 
                 if number == 1 {
                     // if CC is the modulation wheel
-                    if let callback = inDesc.modulationWheelCallback {
-                        callback(value: value)
+                    if let callback = inDesc?.modulationWheelCallback {
+                        callback(value)
                     }
                 } else if number == 64 {
                     // if CC is a sustain pedal
-                    if let callback = inDesc.sustainPedalCallback {
-                        callback(value: value)
+                    if let callback = inDesc?.sustainPedalCallback {
+                        callback(value)
                     }
                 } else {
-                    if let ccMap = inDesc.ccMapping {
+                    if let ccMap = inDesc?.ccMapping {
                         if let parameter = ccMap[number] {
                             parameter.value = AUValue(value).mapLinearRangeToLinear(inMin: 0, inMax: 127, outMin: parameter.minValue, outMax: parameter.maxValue)
                         }
@@ -136,7 +136,7 @@ public class MIDIIn: NSObject {
             // copy into new var to prevent bug, that appeared when using a
             // packet's reference in place
             var packCopy = packet
-            packet = MIDIPacketNext(&packCopy).memory
+            packet = MIDIPacketNext(&packCopy).pointee
         }
     }
     
@@ -147,10 +147,10 @@ public class MIDIIn: NSObject {
         // Create client, port and connect
         
         var clientRef = MIDIPortRef()
-        MIDIClientCreate(clientName, MIDINotifyCallback, &inputDescription, &clientRef)
+        MIDIClientCreate(clientName as CFString, MIDINotifyCallback, &inputDescription, &clientRef)
         
         var portRef = MIDIPortRef()
-        MIDIInputPortCreate(clientRef, portName, MIDIReadCallback, &inputDescription, &portRef)
+        MIDIInputPortCreate(clientRef, portName as CFString, MIDIReadCallback, &inputDescription, &portRef)
         
         self.port = portRef
         self.client = clientRef
@@ -160,12 +160,12 @@ public class MIDIIn: NSObject {
         self.updateAvailableDevices()
         
         // allow network MIDI
-        let session = MIDINetworkSession.defaultSession()
-        session.enabled = true
-        session.connectionPolicy = MIDINetworkConnectionPolicy.Anyone
+        let session = MIDINetworkSession.default()
+        session.isEnabled = true
+        session.connectionPolicy = MIDINetworkConnectionPolicy.anyone
     }
     
-    public func updateAvailableDevices() {
+    open func updateAvailableDevices() {
         // fill available inputs
         let sourceCount = MIDIGetNumberOfSources()
         
@@ -173,7 +173,7 @@ public class MIDIIn: NSObject {
         
         for i in 0..<sourceCount {
             let src = MIDIGetSource(i)
-            var endpointName: Unmanaged<CFStringRef>?
+            var endpointName: Unmanaged<CFString>?
             
             MIDIObjectGetStringProperty(src, kMIDIPropertyName, &endpointName)
             let name = endpointName!.takeRetainedValue() as String
